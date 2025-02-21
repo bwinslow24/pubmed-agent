@@ -94,17 +94,14 @@ def fetch_summary(pmid: str) -> Dict[str, Any]:
 
 
 @tool
-def efetch_pubmed(pmids: List[str], retmode: str = "text", rettype: str = "abstract") -> str:
+def fetch_article_abstract(pmids: List[str]) -> str:
     """
-    Fetch PubMed records using the EFetch utility.
+    Fetch PubMed article abstracts using the EFetch utility.
 
     Args:
         pmids (List[str]): A list of PubMed IDs (PMIDs) to fetch.
-        retmode (str): The format of the returned data. Options: "xml" or "text". Default is "xml".
-        rettype (str): The type of record to return. Options include "abstract", "medline", "full". Default is "abstract".
-
     Returns:
-        str: The fetched PubMed records in the specified format.
+        str: The fetched PubMed article abstracts.
 
     Raises:
         requests.RequestException: If there's an error with the API request.
@@ -112,8 +109,8 @@ def efetch_pubmed(pmids: List[str], retmode: str = "text", rettype: str = "abstr
     params = {
         "db": "pubmed",
         "id": ",".join(pmids),
-        "retmode": retmode,
-        "rettype": rettype,
+        "retmode": 'text',
+        "rettype": 'abstract',
         "api_key": API_KEY
     }
 
@@ -124,8 +121,8 @@ def efetch_pubmed(pmids: List[str], retmode: str = "text", rettype: str = "abstr
 
 
 if __name__ == "__main__":
-    # articles = search_articles("COVID-19 vaccine efficacy")
-    # print(articles)
-    summary = efetch_pubmed({'pmids': ['39953414']})
+    articles = search_articles("COVID-19 vaccine efficacy")
+    print(articles)
+    summary = fetch_article_abstract({'pmids': articles})
     print(summary)
     # ['39953414', '39947305', '39946827']

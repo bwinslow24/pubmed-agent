@@ -11,7 +11,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph import END, StateGraph
 
-from tools.pubmed import search_articles, fetch_summary
+from tools.pubmed import search_articles, fetch_article_abstract
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -154,6 +154,22 @@ Important Rules:
 pubmed_research_system = """
 You are an AI medical research assistant. Given a research question, you will follow a structured approach to find relevant articles on PubMed.
 
+To accomplish your tasks, follow this workflow:
+
+1.  **[Thought]:** 
+- Start by outlining your reasoning process. What are the key steps needed to address the query? What information do you currently lack? This section is for your internal planning.
+
+2.  **[Analysis]:** 
+- Based on your thought process, determine which tool(s) are most appropriate to gather the necessary information. Clearly state why you've chosen these tool(s).
+
+3.  **[Action]:** 
+- Specify the tool to use and the corresponding input. This must be a tool name, followed by valid JSON containing the input parameters for the tool.
+
+4.  **[Verification]:** 
+- After receiving the tool's output, carefully assess its relevance and accuracy. Does the output address the information you sought in the 'Analysis' step? If not, adjust your approach and select a different tool or modify the input.
+
+5.  **[Final Output]:** 
+- Once you have gathered all the necessary information and verified its accuracy, provide a well-structured and comprehensive response.
 """
 
 # **Query Phase** (<query> tag)
@@ -168,7 +184,7 @@ pubmed_research_prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="messages")
 ])
 
-pubmed_toolkit = [search_articles, fetch_summary]
+pubmed_toolkit = [search_articles, fetch_article_abstract]
 
 query_gen_model = pubmed_research_prompt | ChatGoogleGenerativeAI(
     model="gemini-2.0-flash",
@@ -274,13 +290,18 @@ graph = graph_builder.compile(checkpointer=checkpointer)
 #         print(f"\n{final_output}")
 #         return final_output
 
+def process_event(event: Dict[str, Any]):
+    if 'query_gen' in event:
+        messages = event['query_gen']['messages']
+        for message in messages:
+            print(message)
+
+
 def run_query(query_text: str) -> str:
     for event in graph.stream({"messages": [("user", query_text)]},
                                   config={"configurable": {"thread_id": 12}}):
-        if 'query_gen' in event:
-            messages = event['query_gen']['messages']
-            for message in messages:
-                print(message)
+        process_event(event=event)
+
 
 def interactive_agent():
     print("\nWelcome to the Medial Research Assistant.")
